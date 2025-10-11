@@ -1,0 +1,28 @@
+BasedOnStyle: LLVM
+
+# === Indentation ===
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# === Braces ===
+BreakBeforeBraces: Allman
+
+# === Pointer & Reference Alignment ===
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# === Function and control block behavior ===
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: true
+
+# === Access modifiers (public/private/protected) ===
+AccessModifierOffset: -4
+
+# === Optional readability settings ===
+ColumnLimit: 100
+SpaceBeforeParens: ControlStatements
+SortIncludes: true
+ReflowComments: true
