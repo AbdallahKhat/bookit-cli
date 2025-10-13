@@ -8,6 +8,7 @@ namespace CommandInfo
 {
 enum Type // all available commands
 {
+    Init,           // bookit init ./path/dir/
     AddBook,        // bookit addbook path/file.pdf [adds file to library]
     MaxCommands,
 };
@@ -25,7 +26,7 @@ enum ParseError
 constexpr CommandInfo::Type Invalid{MaxCommands}; // used as default init
 
 using namespace std::string_view_literals; // for sv suffix
-constexpr std::array commandNames{"addbook"sv};
+constexpr std::array commandNames{"init"sv, "addbook"sv};
 
 static_assert(std::size(commandNames) == CommandInfo::MaxCommands, "mismatched number of commands");
 } // namespace CommandInfo
