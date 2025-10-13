@@ -19,8 +19,13 @@ public:
     CommandParser(int argc, char* argv[]);
     ~CommandParser() = default;
 
+    CommandParser(const CommandParser&) = delete;
+    CommandParser& operator=(const CommandParser&) = delete;
+    CommandParser(CommandParser&&) = default;
+    CommandParser& operator=(CommandParser&&) = default;
+
     // Accessors
-    std::string_view getCmdStr();   // gets command string from std::array CommandInfo::commandNames
+    std::string_view getCmdStr(); // gets command string from std::array CommandInfo::commandNames
 
     bool isValid() const { return !m_error.has_value(); }
     CommandInfo::ParseError getError() const { return *m_error; }
