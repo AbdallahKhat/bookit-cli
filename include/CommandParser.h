@@ -31,12 +31,18 @@ public:
     CommandInfo::ParseError getError() const { return *m_error; }
 
 private:
+    // Helper functions
+    bool parseCmd();
+
     // Member variables
     CommandInfo::Type m_commandType{CommandInfo::Invalid};
     fs::path m_Path{};
     Options m_option{};
 
     std::optional<CommandInfo::ParseError> m_error{};
+
+    const int m_argc{};
+    char** const m_argv{};
 };
 
 #endif // COMMANDPARSER_H
