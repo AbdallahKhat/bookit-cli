@@ -25,18 +25,22 @@ public:
     CommandParser& operator=(CommandParser&&) = default;
 
     // Accessors
-    std::string_view getCmdStr(); // gets command string from std::array CommandInfo::commandNames
+    CommandInfo::Type commandType() const noexcept { return m_commandType; }
+    const fs::path& path() const noexcept { return m_path; }
 
     bool isValid() const { return !m_error.has_value(); }
     CommandInfo::ParseError getError() const { return *m_error; }
 
 private:
-    // Helper functions
+    // Parsing helper functions
     bool parseCmd();
+    bool parsePath();
+    bool checkIfFile();
+    bool checkIfDir();
 
     // Member variables
     CommandInfo::Type m_commandType{CommandInfo::Invalid};
-    fs::path m_Path{};
+    fs::path m_path{};
     Options m_option{};
 
     std::optional<CommandInfo::ParseError> m_error{};

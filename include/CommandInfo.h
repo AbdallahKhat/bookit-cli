@@ -8,8 +8,8 @@ namespace CommandInfo
 {
 enum Type // all available commands
 {
-    Init,           // bookit init ./path/dir/
-    AddBook,        // bookit addbook path/file.pdf [adds file to library]
+    Init,    // bookit init ./path/dir/
+    AddBook, // bookit addbook path/file.pdf [adds file to library]
     MaxCommands,
 };
 
@@ -21,6 +21,9 @@ enum ParseError
     MissingArgument, // bookit addbook [missing file/option/etc]
     InvalidOption,   // bookit addbook --weirdFlag
     InvalidPath,     // bookit addbook invalid/path
+    NotAFile,        // bookit addbook ./dir/
+    NotADirectory,   // bookit init ./file.pdf
+    UnexpectedArgs,  // unexpected arguments
 };
 
 constexpr CommandInfo::Type Invalid{MaxCommands}; // used as default init
@@ -29,6 +32,12 @@ using namespace std::string_view_literals; // for sv suffix
 constexpr std::array commandNames{"init"sv, "addbook"sv};
 
 static_assert(std::size(commandNames) == CommandInfo::MaxCommands, "mismatched number of commands");
+
+inline const std::string_view toString(CommandInfo::Type type) noexcept
+{
+    return CommandInfo::commandNames[static_cast<std::size_t>(type)];
+}
+
 } // namespace CommandInfo
 
 #endif // COMMANDINFO_H

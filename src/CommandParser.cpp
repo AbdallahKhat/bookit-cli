@@ -4,6 +4,7 @@
 
 using CommandInfo::commandNames;
 using CommandInfo::ParseError;
+using CommandInfo::Type;
 
 // Constructor: parses the main command, file/dir location, options (e.g: --author: "Martin")
 CommandParser::CommandParser(int argc, char* argv[]) : m_argc{argc}, m_argv{argv}
@@ -14,20 +15,15 @@ CommandParser::CommandParser(int argc, char* argv[]) : m_argc{argc}, m_argv{argv
         return;
     }
 
-    if (!parseCmd()) { return; } // failed to parse main command
-}
-
-// Returns a string of the command provided by the user
-std::string_view CommandParser::getCmdStr()
-{
-    return CommandInfo::commandNames[static_cast<std::size_t>(m_commandType)];
+    if (!parseCmd()) { return; }  // return on failure to parse main command
+    if (!parsePath()) { return; } // return on failure to parse path
 }
 
 /*
-    helper functions
+    Parsing helper functions
 */
 
-// parses main command group (e.g: init, addbook, etc.)
+// Parses main command group (e.g: init, addbook, etc.)
 bool CommandParser::parseCmd()
 {
     // get command type (only in m_argv[1]) e.g: bookit addbook ...
@@ -44,6 +40,70 @@ bool CommandParser::parseCmd()
     auto typeIndex = it - commandNames.begin();
     // set found command type
     m_commandType = static_cast<CommandInfo::Type>(typeIndex);
+
+    return true;
+}
+
+// Parses user provided path argument (file - direcory)
+bool CommandParser::parsePath()
+{
+    if (m_argc < 3) // no path argument to (file/directory) given
+    {
+        m_error = ParseError::MissingArgument;
+        return false;
+    }
+
+    // get path argument (only in m_argv[2]) e.g: bookit addbook ./path/to/file
+    std::string_view inputPath{m_argv[2]};
+
+    // check if argument is an option, not a path
+    if (inputPath.substr(0, 2).compare("--") == 0)
+    {
+        m_error = ParseError::InvalidPath;
+        return false;
+    }
+
+    m_path = inputPath;
+
+    // check if path argument is a directory for 'init' command
+    if (m_commandType == Type::Init) { return checkIfDir(); }
+
+    return checkIfFile();
+}
+
+// Helper function for special directory cases [. / ..]
+static bool isSpecialDir(const fs::path& path)
+{
+    const auto& filename = path.filename();
+    return filename == "." || filename == "..";
+}
+
+// Checks if provided path is a file
+bool CommandParser::checkIfFile()
+{
+    if (!m_path.has_filename() || isSpecialDir(m_path))
+    {
+        m_error = ParseError::NotAFile;
+        return false;
+    }
+
+    return true;
+}
+
+// Checks if provided path is a directory
+bool CommandParser::checkIfDir()
+{
+    if (m_argc > 3)
+    {
+        m_error = ParseError::UnexpectedArgs;
+        return false;
+    }
+
+    if (m_path.has_filename() && !isSpecialDir(m_path))
+    {
+        m_error = ParseError::NotADirectory;
+        return false;
+    }
 
     return true;
 }
