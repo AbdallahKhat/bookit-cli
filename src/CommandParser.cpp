@@ -18,6 +18,12 @@ CommandParser::CommandParser(int argc, char* argv[]) : m_argc{argc}, m_argv{argv
         return;
     }
 
+    if (!std::string_view{m_argv[1]}.compare("--help"))
+    {
+        m_isHelp = true;
+        return;
+    }
+
     if (!parseCmd()) { return; }     // return on failure to parse main command
     if (!parsePath()) { return; }    // return on failure to parse path
     if (!parseOptions()) { return; } // return on failure to parse options

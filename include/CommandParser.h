@@ -35,6 +35,7 @@ public:
     const Options& options() const noexcept { return m_option; }
 
     bool isValid() const noexcept { return !m_error.has_value(); }
+    bool isHelp() const noexcept { return m_isHelp; }
     CommandParser::Error error() const noexcept { return *m_error; }
 
 private:
@@ -49,6 +50,7 @@ private:
     CommandInfo::Type m_commandType{CommandInfo::Invalid};
     fs::path m_path{};
     Options m_option{};
+    bool m_isHelp{};
 
     std::optional<CommandParser::Error> m_error{};
 
