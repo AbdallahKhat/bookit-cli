@@ -35,10 +35,18 @@ constexpr std::array optionNames{"--author"sv, "--year"sv};
 
 static_assert(std::size(commandNames) == CommandInfo::MaxCommands, "mismatched number of commands");
 
-inline const std::string_view toString(CommandInfo::Type type) noexcept
-{
-    return CommandInfo::commandNames[static_cast<std::size_t>(type)];
-}
+// ---------------------------
+// Public printing interface
+// ---------------------------
+
+// convert command type to string
+const std::string_view toString(CommandInfo::Type type) noexcept;
+
+// print a help message showing usage and available commands.
+void printHelp() noexcept;
+
+// print an error message corresponding to a specific ParseError.
+void printError(ParseError errorType, const std::string_view arg) noexcept;
 
 } // namespace CommandInfo
 
