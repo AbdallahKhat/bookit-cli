@@ -17,7 +17,7 @@ public:
     struct Error
     {
         CommandInfo::ParseError type{};
-        const std::string_view invalidArg{};
+        const std::string_view arg{};
     };
 
     // Constructors/Destructors
@@ -32,6 +32,7 @@ public:
     // Accessors
     CommandInfo::Type commandType() const noexcept { return m_commandType; }
     const fs::path& path() const noexcept { return m_path; }
+    const Options& options() const noexcept { return m_option; }
 
     bool isValid() const noexcept { return !m_error.has_value(); }
     CommandParser::Error error() const noexcept { return *m_error; }
@@ -42,6 +43,7 @@ private:
     bool parsePath();
     bool checkIfFile();
     bool checkIfDir();
+    bool parseOptions();
 
     // Member variables
     CommandInfo::Type m_commandType{CommandInfo::Invalid};
