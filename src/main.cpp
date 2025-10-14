@@ -8,51 +8,39 @@ void tryHelpStr()
 }
 
 // prints error message.
-void printError(CommandInfo::ParseError error, char* argv[])
+void printError(CommandParser::Error error)
 {
     using namespace CommandInfo;
-
-    switch (error)
+    
+    const auto& arg = error.invalidArg;
+    switch (error.type)
     {
     case MissingCommand:
         std::cerr << "bookit: missing command\n";
-        tryHelpStr();
-        return;
-
+        break;
     case UnknownCommand:
-        std::cerr << "bookit: invalid command: " << '\'' << argv[1] << "\'\n";
-        tryHelpStr();
-        return;
-
+        std::cerr << "bookit: invalid command " << '\'' << arg << "\'\n";
+        break;
     case MissingArgument:
         std::cerr << "bookit: Missing file operand\n";
-        tryHelpStr();
-        return;
-
+        break;
     case InvalidPath:
-        std::cerr << "bookit: invalid path argument\n";
-        tryHelpStr();
-        return;
-
+        std::cerr << "bookit: invalid path argument '" << arg << "'\n";
+        break;
     case NotAFile:
-        std::cerr << "bookit: target must be a file\n";
-        tryHelpStr();
-        return;
-
+        std::cerr << "bookit: target '" << arg << "' is not a file\n";
+        break;
     case NotADirectory:
-        std::cerr << "bookit: target must be a directory\n";
-        tryHelpStr();
-        return;
-
+        std::cerr << "bookit: target '" << arg << "' is not a directory\n";
+        break;
     case UnexpectedArgs:
-        std::cerr << "bookit: too many arguments\n";
-        tryHelpStr();
-        return;
-
+        std::cerr << "bookit: unexpected argument '" << arg << "\'\n";
+        break;
     case InvalidOption:
     default:
-        std::cerr << "bookit: an unexpected error has occurre\n";
+        std::cerr << "bookit: an unexpected error has occurred\n";
     }
+    tryHelpStr();
 }
 
 int main(int argc, char* argv[])
@@ -63,11 +51,11 @@ int main(int argc, char* argv[])
 
     if (!parsedCmd.isValid())
     {
-        CommandInfo::ParseError err = parsedCmd.getError(); // get error code
+        CommandParser::Error error = parsedCmd.error(); // get error code
 
-        printError(err, argv);
+        printError(error);
 
-        return err;
+        return error.type;
     }
 
     std::cout << "The command given is: " << CommandInfo::toString(parsedCmd.commandType()) << '\n';
