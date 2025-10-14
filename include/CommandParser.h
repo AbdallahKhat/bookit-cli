@@ -14,6 +14,11 @@ class CommandParser
 {
 public:
     using Options = std::unordered_map<std::string_view, std::string_view>;
+    struct Error
+    {
+        CommandInfo::ParseError type{};
+        const std::string_view invalidArg{};
+    };
 
     // Constructors/Destructors
     CommandParser(int argc, char* argv[]);
@@ -28,8 +33,8 @@ public:
     CommandInfo::Type commandType() const noexcept { return m_commandType; }
     const fs::path& path() const noexcept { return m_path; }
 
-    bool isValid() const { return !m_error.has_value(); }
-    CommandInfo::ParseError getError() const { return *m_error; }
+    bool isValid() const noexcept { return !m_error.has_value(); }
+    CommandParser::Error error() const noexcept { return *m_error; }
 
 private:
     // Parsing helper functions
@@ -43,7 +48,7 @@ private:
     fs::path m_path{};
     Options m_option{};
 
-    std::optional<CommandInfo::ParseError> m_error{};
+    std::optional<CommandParser::Error> m_error{};
 
     const int m_argc{};
     char** const m_argv{};
