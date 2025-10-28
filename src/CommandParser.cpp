@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <string_view>
 
+namespace fs = std::filesystem;
+
 using CommandInfo::commandNames;
 using CommandInfo::optionNames;
 using CommandInfo::ParseError;
