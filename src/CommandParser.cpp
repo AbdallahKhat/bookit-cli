@@ -58,10 +58,10 @@ bool CommandParser::parseCmd()
     return true;
 }
 
-// Parses user provided path argument (file - direcory)
+// Parses user provided path argument
 bool CommandParser::parsePath()
 {
-    if (m_argc < 3) // no path argument to (file/directory) given
+    if (m_argc < 3) // no path argument given
     {
         m_error.emplace(Error{ParseError::MissingArgument});
         return false;
@@ -77,46 +77,16 @@ bool CommandParser::parsePath()
         return false;
     }
 
+    if (m_commandType == Type::Init)
+    {
+        if (m_argc > 3)
+        {
+            m_error.emplace(Error{ParseError::UnexpectedArgs, m_argv[3]});
+            return false;
+        }
+    }
+
     m_path = inputPath;
-
-    // check if path is a directory for 'init' command, else check for file
-    return (m_commandType == Type::Init) ? checkIfDir() : checkIfFile();
-}
-
-// Helper function for special directory cases [. / ..]
-static bool isSpecialDir(const fs::path& path)
-{
-    const auto& filename = path.filename();
-    return filename == "." || filename == "..";
-}
-
-// Checks if provided path is a file
-bool CommandParser::checkIfFile()
-{
-    if (!m_path.has_filename() || isSpecialDir(m_path))
-    {
-        m_error.emplace(Error{ParseError::NotAFile, m_argv[2]});
-        return false;
-    }
-
-    return true;
-}
-
-// Checks if provided path is a directory
-bool CommandParser::checkIfDir()
-{
-    if (m_argc > 3)
-    {
-        m_error.emplace(Error{ParseError::UnexpectedArgs, m_argv[3]});
-        return false;
-    }
-
-    if (m_path.has_filename() && !isSpecialDir(m_path))
-    {
-        m_error.emplace(Error{ParseError::NotADirectory, m_argv[2]});
-        return false;
-    }
-
     return true;
 }
 

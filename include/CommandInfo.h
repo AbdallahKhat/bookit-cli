@@ -20,8 +20,6 @@ enum ParseError
     UnknownCommand,  // bookit somethingInvalid
     MissingArgument, // bookit addbook [missing file/option/etc]
     InvalidPath,     // bookit addbook invalid/path
-    NotAFile,        // bookit addbook ./dir/
-    NotADirectory,   // bookit init ./file.pdf
     UnexpectedArgs,  // unexpected arguments
     InvalidOption,   // bookit addbook --weirdFlag
     NoOptValue,      // bookit addbook --author [empty]

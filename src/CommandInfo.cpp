@@ -44,17 +44,8 @@ void printError(ParseError errorType, const std::string_view arg) noexcept
         std::cerr << "bookit: Missing file operand\n";
         break;
     case InvalidPath:
-        std::cerr << "bookit: unexpected option '" << arg << "'\n";
-        break;
-    case NotAFile:
-        looksLikeOption(arg)
-            ? std::cerr << "bookit: unexpected option '" << arg << "'; expected a file\n"
-            : std::cerr << "bookit: target '" << arg << "' is not a file\n";
-        break;
-    case NotADirectory:
-        looksLikeOption(arg)
-            ? std::cerr << "bookit: unexpected option '" << arg << "'; expected a directory\n"
-            : std::cerr << "bookit: target '" << arg << "' is not a directory\n";
+        std::cerr << "bookit: unexpected option '" << arg
+                  << "'; expected a path\n";
         break;
     case UnexpectedArgs:
         std::cerr << "bookit: unexpected argument '" << arg << "\'\n";

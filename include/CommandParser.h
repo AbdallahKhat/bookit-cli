@@ -41,8 +41,6 @@ private:
     // Parsing helper functions
     bool parseCmd();
     bool parsePath();
-    bool checkIfFile();
-    bool checkIfDir();
     bool parseOptions();
 
     // Member variables
