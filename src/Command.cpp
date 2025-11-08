@@ -1,5 +1,5 @@
 #include "Command.h"
-#include "BookitCore.h"
+#include "Core.h"
 #include <filesystem>
 
 namespace fs = std::filesystem;
@@ -29,5 +29,5 @@ bool InitCommand::validate() const
 
 void InitCommand::execute() const
 {
-    BookitCore::initializeWorkspace(m_path);
+    Bookit::Core::initializeWorkspace(m_path);
 }

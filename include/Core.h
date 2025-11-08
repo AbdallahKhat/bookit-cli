@@ -3,7 +3,7 @@
 
 #include <filesystem>
 
-namespace BookitCore
+namespace Bookit::Core
 {
 void initializeWorkspace(const std::filesystem::path& wsDir);
 } // namespace BookitCore
