@@ -25,7 +25,7 @@ void setDirR_X(fs::path path)
 
 } // namespace
 
-namespace BookitCore
+namespace Bookit::Core
 {
 
 void initializeWorkspace(const fs::path& wsDir)
