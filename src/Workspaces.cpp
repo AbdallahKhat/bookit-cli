@@ -1,0 +1,119 @@
+#include <Workspaces.h>
+
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
+
+namespace fs = std::filesystem;
+using json = nlohmann::json;
+
+namespace Bookit
+{
+
+Workspaces::Workspaces() : m_configFile{getConfigFilePath()}
+{
+    // Check if workspaces.json exists
+    if (fs::exists(m_configFile))
+    {
+        // File exists, load the current workspace from it
+        auto config = loadWorkspaces();
+        if (config.contains("current") && !config["current"].is_null())
+        {
+            m_currentWorkspace = config["current"].get<std::string>();
+        }
+    }
+    else
+    {
+        // File doesn't exist, create it with default structure
+        auto defaultConfig = createDefaultConfig();
+
+        // Ensure the directory exists
+        auto configDir = m_configFile.parent_path();
+        if (!fs::exists(configDir)) { fs::create_directories(configDir); }
+
+        // Write default config to file
+        std::ofstream configStream{m_configFile};
+        configStream << defaultConfig.dump(4);
+        configStream.close();
+    }
+}
+
+// Get the configuration file path (same directory as executable)
+std::filesystem::path Workspaces::getConfigFilePath() const
+{
+    // Get the directory of the executable
+    auto exePath = fs::current_path() / "workspaces.json";
+    return exePath;
+}
+
+// Create default configuration structure
+nlohmann::json Workspaces::createDefaultConfig() const
+{
+    json defaultConfig;
+    defaultConfig["current"] = "";               // Empty current workspace path
+    defaultConfig["workspaces"] = json::array(); // Empty array of initialized workspaces
+    return defaultConfig;
+}
+
+// Load JSON from the file or return an empty default.
+json Workspaces::loadWorkspaces()
+{
+    if (!fs::exists(m_configFile)) { return createDefaultConfig(); }
+
+    std::ifstream configStream{m_configFile};
+    json config;
+    configStream >> config;
+    configStream.close();
+
+    return config;
+}
+
+// Add a workspace to the list if it doesn't already exist and sets it to current workspace
+void Workspaces::addWorkspace(const std::filesystem::path& path)
+{
+    // Convert to absolute path
+    auto absolutePath = fs::absolute(path);
+    auto config = loadWorkspaces();
+
+    // Convert path to string for comparison
+    std::string pathStr = absolutePath.string();
+
+    // Check if workspace already exists in the array
+    auto& workspaces = config["workspaces"];
+    auto it = std::find_if(workspaces.begin(), workspaces.end(),
+                           [&pathStr](const json& ws) { return ws.get<std::string>() == pathStr; });
+
+    // If workspace doesn't exist, add it
+    if (it == workspaces.end()) 
+    { 
+        workspaces.push_back(pathStr);
+        saveConfig(config);  // Save the updated config with new workspace
+    }
+
+    // Set as current workspace
+    setCurrent(absolutePath);
+}
+
+// Set the current workspace and save to file
+void Workspaces::setCurrent(const std::string& absolutePath)
+{
+    auto config = loadWorkspaces();
+
+    // Update current workspace
+    m_currentWorkspace = absolutePath;
+    config["current"] = absolutePath;
+
+    // Save the updated config to file
+    saveConfig(config);
+}
+
+// Helper function to save configuration to file
+void Workspaces::saveConfig(const nlohmann::json& config)
+{
+    std::ofstream configStream{m_configFile};
+    configStream << config.dump(4);
+    configStream.close();
+}
+
+}; // namespace Bookit
