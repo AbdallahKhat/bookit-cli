@@ -1,6 +1,7 @@
 #ifndef LIBRARYMANAGER_H
 #define LIBRARYMANAGER_H
 
+#include "Command.h"
 #include "CommandParser.h"
 
 // LibraryManager is the coordinator class for all features of the library.
@@ -12,11 +13,13 @@ public:
     LibraryManager(const CommandParser& parsedCmd) noexcept : m_parsedCmd{parsedCmd} {}
 
     // Public Interfaces
-    bool ExecuteCmd();
+    bool executeCmd();
 
 private:
     // Private facade command functions
-    bool InitWorspaceEnv();
+    bool initWorspaceEnv();
+
+    std::unique_ptr<Command> createCommand();
 
     // Member variables
     const CommandParser& m_parsedCmd;

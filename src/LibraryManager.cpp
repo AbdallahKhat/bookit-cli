@@ -1,12 +1,11 @@
 #include "LibraryManager.h"
 #include "CommandInfo.h"
 #include "CommandParser.h"
+#include "Workspaces.h"
 #include <filesystem>
+#include <memory>
 
 namespace fs = std::filesystem;
-
-// static helper function prototypes
-static bool verifyDirectoryReady(const fs::path& path);
 
 /**
  *
@@ -14,12 +13,12 @@ static bool verifyDirectoryReady(const fs::path& path);
  *
  */
 
-bool LibraryManager::ExecuteCmd()
+bool LibraryManager::executeCmd()
 {
     switch (m_parsedCmd.commandType())
     {
     case CommandInfo::Init:
-        InitWorspaceEnv();
+        initWorspaceEnv();
         break;
 
     // case CommandInfo::AddBook:
@@ -37,39 +36,33 @@ bool LibraryManager::ExecuteCmd()
  */
 
 // Initialize a new Workspace Enironment for library use
-bool LibraryManager::InitWorspaceEnv()
+bool LibraryManager::initWorspaceEnv()
 {
-    const auto& path = m_parsedCmd.path();
 
-    if (!verifyDirectoryReady(path)) { return false; }
+    Bookit::Workspaces workspace;
 
-    // TODO: Execute Concrete Command (CommandInit)
+    auto command = createCommand();
+    if (!command) { return false; }
+
+    if (!command->validate()) { return false; }
+
+    command->execute();
+
+    // save workspace to workspace.json
+    workspace.addWorkspace(m_parsedCmd.path());
 
     return true;
 }
 
-/**
- *
- * Static helper functions for the command functions
- *
- */
-
-/* Helpers for path verifications */
-
-// checks if path refers to real directory
-static bool verifyDirectoryReady(const fs::path& path)
+std::unique_ptr<Command> LibraryManager::createCommand()
 {
-    if (!fs::is_directory(path))
+    switch (m_parsedCmd.commandType())
     {
-        // TODO: Error: does not refer to a real directory
-        return false;
-    }
+    case CommandInfo::Init:
+        return std::make_unique<InitCommand>(m_parsedCmd.path());
 
-    if (!fs::is_empty(path))
-    {
-        // TODO: Error: directory must be empty to initialize
-        return false;
+    // case CommandInfo::AddBook:
+    default:
+        return {};
     }
-
-    return true;
 }
