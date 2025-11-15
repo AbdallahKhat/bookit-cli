@@ -31,3 +31,16 @@ void InitCommand::execute() const
 {
     Bookit::Core::initializeWorkspace(m_path);
 }
+
+// Class AddBookCommand
+bool AddBookCommand::validate() const
+{
+    // Validate that the provided file is a real file
+    return validateFile(m_filePath);
+}
+
+void AddBookCommand::execute() const
+{
+    // Call the addBook function from Bookit::Core
+    Bookit::Core::addBook(m_wsDir, m_filePath, m_options);
+}

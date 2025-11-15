@@ -3,6 +3,7 @@
 #include "CommandParser.h"
 #include "Workspaces.h"
 #include <filesystem>
+#include <iostream>
 #include <memory>
 
 namespace fs = std::filesystem;
@@ -15,15 +16,19 @@ namespace fs = std::filesystem;
 
 bool LibraryManager::executeCmd()
 {
-    switch (m_parsedCmd.commandType())
-    {
-    case CommandInfo::Init:
-        initWorspaceEnv();
-        break;
+    Bookit::Workspaces workspace;
 
-    // case CommandInfo::AddBook:
-    default:
-        break;
+    auto command = createCommand(workspace);
+    if (!command) { return false; }
+
+    if (!command->validate()) { return false; }
+
+    command->execute();
+
+    // For Init command, add workspace to persistence
+    if (m_parsedCmd.commandType() == CommandInfo::Init)
+    {
+        workspace.addWorkspace(m_parsedCmd.path());
     }
 
     return true;
@@ -31,37 +36,30 @@ bool LibraryManager::executeCmd()
 
 /**
  *
- * Private facade command function implementations
+ * Private function implementations
  *
  */
 
-// Initialize a new Workspace Enironment for library use
-bool LibraryManager::initWorspaceEnv()
-{
-
-    Bookit::Workspaces workspace;
-
-    auto command = createCommand();
-    if (!command) { return false; }
-
-    if (!command->validate()) { return false; }
-
-    command->execute();
-
-    // save workspace to workspace.json
-    workspace.addWorkspace(m_parsedCmd.path());
-
-    return true;
-}
-
-std::unique_ptr<Command> LibraryManager::createCommand()
+std::unique_ptr<Command> LibraryManager::createCommand(const Bookit::Workspaces& workspace)
 {
     switch (m_parsedCmd.commandType())
     {
     case CommandInfo::Init:
         return std::make_unique<InitCommand>(m_parsedCmd.path());
 
-    // case CommandInfo::AddBook:
+    case CommandInfo::AddBook:
+    {
+        const auto& currentWs = workspace.getCurrentWorkspace();
+        if (currentWs.empty())
+        {
+            std::cerr << "Error: No active workspace. Please initialize a workspace first with "
+                         "'bookit init <dir>'\n";
+            return {};
+        }
+        return std::make_unique<AddBookCommand>(m_parsedCmd.path(), m_parsedCmd.options(),
+                                                currentWs);
+    }
+
     default:
         return {};
     }

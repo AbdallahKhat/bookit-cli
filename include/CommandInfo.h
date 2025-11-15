@@ -25,11 +25,11 @@ enum ParseError
     NoOptValue,      // bookit addbook --author [empty]
 };
 
-constexpr CommandInfo::Type Invalid{MaxCommands}; // used as default init
+inline constexpr CommandInfo::Type Invalid{MaxCommands}; // used as default init
 
 using namespace std::string_view_literals; // for sv suffix
-constexpr std::array commandNames{"init"sv, "addbook"sv};
-constexpr std::array optionNames{"--author"sv, "--year"sv};
+inline constexpr std::array commandNames{"init"sv, "addbook"sv};
+inline constexpr std::array optionNames{"--author"sv, "--year"sv, "--isbn"sv, "--category"sv};
 
 static_assert(std::size(commandNames) == CommandInfo::MaxCommands, "mismatched number of commands");
 
