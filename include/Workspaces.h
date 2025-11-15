@@ -13,7 +13,7 @@ public:
     Workspaces();
 
     void addWorkspace(const std::filesystem::path&);
-    // std::string getCurrent();
+    const std::filesystem::path& getCurrentWorkspace() const noexcept { return m_currentWorkspace; }
 
 private:
     std::filesystem::path m_currentWorkspace{};
