@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <string>
+#include <unordered_map>
 
 class Command
 {
@@ -33,6 +34,26 @@ public:
 
 private:
     const std::filesystem::path& m_path;
+};
+
+class AddBookCommand : public Command
+{
+public:
+    using Options = std::unordered_map<std::string_view, std::string_view>;
+
+    AddBookCommand(const std::filesystem::path& filePath, const Options& options,
+                   const std::filesystem::path& wsDir)
+        : m_filePath{filePath}, m_options{options}, m_wsDir{wsDir}
+    {
+    }
+
+    bool validate() const override;
+    void execute() const override;
+
+private:
+    std::filesystem::path m_filePath;
+    Options m_options;
+    std::filesystem::path m_wsDir;
 };
 
 #endif // COMMAND_H
