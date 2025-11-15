@@ -1,8 +1,10 @@
 #include "Core.h"
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -21,6 +23,124 @@ void setDirOwnerRWX(fs::path path)
 void setDirR_X(fs::path path)
 {
     fs::permissions(path, static_cast<fs::perms>(0555), fs::perm_options::replace);
+}
+
+bool validateWorkspaceAndMetadata(const fs::path& wsDir)
+{
+    if (!fs::exists(wsDir) || !fs::is_directory(wsDir))
+    {
+        std::cerr << "Error: Workspace directory '" << wsDir.string() << "' does not exist\n";
+        return false;
+    }
+
+    auto metadataPath = wsDir / ".bookit" / "metadata.json";
+    if (!fs::exists(metadataPath))
+    {
+        std::cerr << "Error: Workspace metadata file not found. Workspace may be corrupted\n";
+        return false;
+    }
+
+    return true;
+}
+
+bool isPdfFile(const fs::path& filePath)
+{
+    std::ifstream file{filePath, std::ios::binary};
+    if (!file)
+    {
+        std::cerr << "Error: Unable to open file '" << filePath.string() << "'\n";
+        return false;
+    }
+
+    char signature[4]{};
+    file.read(signature, sizeof(signature));
+    if (!file)
+    {
+        std::cerr << "Error: Failed reading file header for '" << filePath.string() << "'\n";
+        return false;
+    }
+
+    return signature[0] == '%' && signature[1] == 'P' && signature[2] == 'D' && signature[3] == 'F';
+}
+
+std::vector<Bookit::Book> loadBooksFromMetadata(const ordered_json& metadata)
+{
+    std::vector<Bookit::Book> books;
+
+    for (const auto& entry : metadata["books"])
+    {
+        Bookit::Book loadedBook;
+        loadedBook.name = entry.value("name", "");
+        loadedBook.author = entry.value("author", "");
+        loadedBook.year = entry.value("year", "");
+        loadedBook.isbn = entry.value("isbn", "");
+        loadedBook.category = entry.value("category", "");
+        books.push_back(std::move(loadedBook));
+    }
+
+    return books;
+}
+
+Bookit::Book createBookFromFileAndOptions(const fs::path& filePath,
+                                          const CommandParser::Options& options)
+{
+    Bookit::Book book;
+    book.name = filePath.filename().string();
+    book.author = options.count("--author") ? std::string(options.at("--author")) : "";
+    book.year = options.count("--year") ? std::string(options.at("--year")) : "";
+    book.isbn = options.count("--isbn") ? std::string(options.at("--isbn")) : "";
+    book.category = options.count("--category") ? std::string(options.at("--category")) : "";
+    return book;
+}
+
+bool copyFileToWorkspace(const fs::path& filePath, const fs::path& wsDir)
+{
+    fs::path destPath = wsDir / filePath.filename();
+
+    if (fs::exists(destPath))
+    {
+        std::cerr << "Error: A book named '" << filePath.filename().string()
+                  << "' already exists in the workspace. Please rename the file and try again\n";
+        return false;
+    }
+
+    std::error_code ec;
+    fs::copy_file(filePath, destPath, fs::copy_options::none, ec);
+
+    if (ec)
+    {
+        std::cerr << "Error: failed to copy book file: " << ec.message() << '\n';
+        return false;
+    }
+
+    return true;
+}
+
+ordered_json createBookEntry(const Bookit::Book& book)
+{
+    ordered_json bookEntry;
+    bookEntry["name"] = book.name;
+    bookEntry["author"] = book.author;
+    bookEntry["year"] = book.year;
+    bookEntry["isbn"] = book.isbn;
+    bookEntry["category"] = book.category;
+    return bookEntry;
+}
+
+bool isBookDuplicate(const ordered_json& metadata, const Bookit::Book& book)
+{
+    auto existingBooks = loadBooksFromMetadata(metadata);
+    auto duplicateIt =
+        std::find_if(existingBooks.begin(), existingBooks.end(),
+                     [&book](const Bookit::Book& existing) { return existing.name == book.name; });
+
+    if (duplicateIt != existingBooks.end())
+    {
+        std::cerr << "Error: A book named '" << book.name
+                  << "' already exists in metadata. Please rename the file before adding again\n";
+        return true;
+    }
+    return false;
 }
 
 } // namespace
@@ -44,6 +164,8 @@ void initializeWorkspace(const fs::path& wsDir)
             return;
         }
         std::cerr << "Error: .bookit directory already exists\n";
+        setDirR_X(wsDir);
+        return;
     }
 
     ordered_json bookitMetadata = {{"version", 1}, {"books", ordered_json::array()}};
@@ -55,4 +177,47 @@ void initializeWorkspace(const fs::path& wsDir)
     setDirR_X(wsDir);
 }
 
-} // namespace BookitCore
+} // namespace Bookit::Core
+
+void Bookit::Core::addBook(const fs::path& wsDir, const fs::path& filePath,
+                           const CommandParser::Options& options)
+{
+    if (!validateWorkspaceAndMetadata(wsDir)) { return; }
+
+    Book book = createBookFromFileAndOptions(filePath, options);
+
+    if (!isPdfFile(filePath))
+    {
+        std::cerr << "Error: '" << filePath.string() << "' is not a valid PDF file\n";
+        return;
+    }
+
+    setDirOwnerRWX(wsDir);
+
+    if (!copyFileToWorkspace(filePath, wsDir))
+    {
+        setDirR_X(wsDir);
+        return;
+    }
+
+    saveBookToMetadata(wsDir, book);
+    setDirR_X(wsDir);
+}
+
+void Bookit::Core::saveBookToMetadata(const fs::path& wsDir, const Book& book)
+{
+    fs::path metadataPath = wsDir / ".bookit" / "metadata.json";
+
+    std::ifstream metadataStream{metadataPath};
+    ordered_json metadata;
+    metadataStream >> metadata;
+    metadataStream.close();
+
+    if (isBookDuplicate(metadata, book)) { return; }
+
+    metadata["books"].push_back(createBookEntry(book));
+
+    std::ofstream metadataOut{metadataPath};
+    metadataOut << metadata.dump(4);
+    metadataOut.close();
+}
