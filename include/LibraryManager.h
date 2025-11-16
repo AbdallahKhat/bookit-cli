@@ -4,6 +4,8 @@
 #include "Command.h"
 #include "CommandParser.h"
 #include "Workspaces.h"
+#include <filesystem>
+#include <optional>
 
 // LibraryManager is the coordinator class for all features of the library.
 // It serves as the main interface for library operations.
@@ -19,6 +21,10 @@ public:
 private:
     // Private functions
     std::unique_ptr<Command> createCommand(const Bookit::Workspaces& workspace);
+
+    // Returns the active workspace path or std::nullopt
+    std::optional<std::filesystem::path>
+    getActiveWorkspace(const Bookit::Workspaces& workspace) const;
 
     // Member variables
     const CommandParser& m_parsedCmd;
