@@ -35,12 +35,21 @@ void InitCommand::execute() const
 // Class AddBookCommand
 bool AddBookCommand::validate() const
 {
-    // Validate that the provided file is a real file
-    return validateFile(m_filePath);
+    return validateDirectory(m_wsDir) && validateFile(m_filePath);
 }
 
 void AddBookCommand::execute() const
 {
-    // Call the addBook function from Bookit::Core
     Bookit::Core::addBook(m_wsDir, m_filePath, m_options);
+}
+
+// Class RemoveBookCommand
+bool RemoveBookCommand::validate() const
+{
+    return validateDirectory(m_wsDir) && !m_bookFileName.empty();
+}
+
+void RemoveBookCommand::execute() const
+{
+    Bookit::Core::removeBook(m_wsDir, m_bookFileName);
 }
