@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <optional>
 
 namespace fs = std::filesystem;
 
@@ -40,6 +41,20 @@ bool LibraryManager::executeCmd()
  *
  */
 
+std::optional<fs::path>
+LibraryManager::getActiveWorkspace(const Bookit::Workspaces& workspace) const
+{
+    const auto& currentWs = workspace.getCurrentWorkspace();
+    if (currentWs.empty())
+    {
+        std::cerr << "Error: No active workspace. Please initialize a workspace first with "
+                     "'bookit init <dir>'\n";
+        return std::nullopt;
+    }
+
+    return currentWs;
+}
+
 std::unique_ptr<Command> LibraryManager::createCommand(const Bookit::Workspaces& workspace)
 {
     switch (m_parsedCmd.commandType())
@@ -49,15 +64,25 @@ std::unique_ptr<Command> LibraryManager::createCommand(const Bookit::Workspaces&
 
     case CommandInfo::AddBook:
     {
-        const auto& currentWs = workspace.getCurrentWorkspace();
-        if (currentWs.empty())
+        const auto& currentWs = getActiveWorkspace(workspace);
+        if (!currentWs) return {};
+        return std::make_unique<AddBookCommand>(m_parsedCmd.path(), m_parsedCmd.options(),
+                                                *currentWs);
+    }
+
+    case CommandInfo::RemoveBook:
+    {
+        const auto& currentWs = getActiveWorkspace(workspace);
+        if (!currentWs) return {};
+
+        const auto bookFileName = m_parsedCmd.path().filename().string();
+        if (bookFileName.empty())
         {
-            std::cerr << "Error: No active workspace. Please initialize a workspace first with "
-                         "'bookit init <dir>'\n";
+            std::cerr << "Error: Missing book file name to remove.\n";
             return {};
         }
-        return std::make_unique<AddBookCommand>(m_parsedCmd.path(), m_parsedCmd.options(),
-                                                currentWs);
+
+        return std::make_unique<RemoveBookCommand>(bookFileName, *currentWs);
     }
 
     default:
