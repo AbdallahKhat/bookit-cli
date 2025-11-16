@@ -4,6 +4,8 @@
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <optional>
+#include <string_view>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -143,15 +145,95 @@ bool isBookDuplicate(const ordered_json& metadata, const Bookit::Book& book)
     return false;
 }
 
+struct BookEntryLookup
+{
+    ordered_json* books;
+    ordered_json::iterator entry;
+};
+
+ordered_json* getBooksArray(ordered_json& metadata)
+{
+    auto booksIt = metadata.find("books");
+    if (booksIt == metadata.end() || !booksIt->is_array())
+    {
+        std::cerr << "Error: Metadata is corrupted; missing books array\n";
+        return nullptr;
+    }
+
+    return &(*booksIt);
+}
+
+std::optional<ordered_json> readMetadata(const fs::path& metadataPath)
+{
+    std::ifstream metadataStream{metadataPath};
+    if (!metadataStream)
+    {
+        std::cerr << "Error: Unable to open metadata file\n";
+        return std::nullopt;
+    }
+
+    ordered_json metadata;
+    metadataStream >> metadata;
+    metadataStream.close();
+    return metadata;
+}
+
+std::optional<BookEntryLookup> findBookEntry(ordered_json& metadata,
+                                             const std::string_view bookName)
+{
+    auto* books = getBooksArray(metadata);
+    if (!books) { return std::nullopt; }
+
+    auto entryIt = std::find_if(books->begin(), books->end(), [&bookName](const ordered_json& entry)
+                                { return entry.value("name", "") == bookName; });
+
+    if (entryIt == books->end())
+    {
+        std::cerr << "Error: Book '" << bookName
+                  << "' was not found in metadata. Nothing to remove.\n";
+        return std::nullopt;
+    }
+
+    return BookEntryLookup{books, entryIt};
+}
+
+bool writeMetadata(const fs::path& metadataPath, const ordered_json& metadata)
+{
+    std::ofstream metadataOut{metadataPath};
+    if (!metadataOut)
+    {
+        std::cerr << "Error: Unable to save metadata\n";
+        return false;
+    }
+
+    metadataOut << metadata.dump(4);
+    return true;
+}
+
+bool removeWorkspaceBookFile(const fs::path& wsDir, const std::string_view bookName)
+{
+    const auto bookPath = wsDir / bookName;
+    if (!fs::exists(bookPath))
+    {
+        std::cerr << "Error: Book file '" << bookPath.string() << "' does not exist in workspace\n";
+        return false;
+    }
+
+    std::error_code ec;
+    if (!fs::remove(bookPath, ec) || ec)
+    {
+        std::cerr << "Error: Failed to delete book file '" << bookPath.string()
+                  << "': " << ec.message() << '\n';
+        return false;
+    }
+
+    return true;
+}
+
 } // namespace
 
-namespace Bookit::Core
+void Bookit::Core::initializeWorkspace(const fs::path& wsDir)
 {
-
-void initializeWorkspace(const fs::path& wsDir)
-{
-    // TODO: Make command more robust (permissions, errors, wsDir ownership checks)
-
     setDirOwnerRWX(wsDir);
 
     fs::path bookitDir = wsDir / ".bookit";
@@ -176,8 +258,6 @@ void initializeWorkspace(const fs::path& wsDir)
 
     setDirR_X(wsDir);
 }
-
-} // namespace Bookit::Core
 
 void Bookit::Core::addBook(const fs::path& wsDir, const fs::path& filePath,
                            const CommandParser::Options& options)
@@ -204,20 +284,49 @@ void Bookit::Core::addBook(const fs::path& wsDir, const fs::path& filePath,
     setDirR_X(wsDir);
 }
 
+void Bookit::Core::removeBook(const fs::path& wsDir, const std::string_view bookFileName)
+{
+    if (!validateWorkspaceAndMetadata(wsDir)) { return; }
+
+    const fs::path metadataPath = wsDir / ".bookit" / "metadata.json";
+
+    auto metadata = readMetadata(metadataPath);
+    if (!metadata) { return; }
+
+    auto bookLookup = findBookEntry(*metadata, bookFileName);
+    if (!bookLookup) { return; }
+
+    setDirOwnerRWX(wsDir);
+
+    if (!removeWorkspaceBookFile(wsDir, bookFileName))
+    {
+        setDirR_X(wsDir);
+        return;
+    }
+
+    bookLookup->books->erase(bookLookup->entry);
+
+    if (!writeMetadata(metadataPath, *metadata))
+    {
+        setDirR_X(wsDir);
+        return;
+    }
+
+    setDirR_X(wsDir);
+}
+
 void Bookit::Core::saveBookToMetadata(const fs::path& wsDir, const Book& book)
 {
-    fs::path metadataPath = wsDir / ".bookit" / "metadata.json";
+    const fs::path metadataPath = wsDir / ".bookit" / "metadata.json";
 
-    std::ifstream metadataStream{metadataPath};
-    ordered_json metadata;
-    metadataStream >> metadata;
-    metadataStream.close();
+    auto metadata = readMetadata(metadataPath);
+    if (!metadata) { return; }
 
-    if (isBookDuplicate(metadata, book)) { return; }
+    auto* books = getBooksArray(*metadata);
+    if (!books) { return; }
 
-    metadata["books"].push_back(createBookEntry(book));
+    if (isBookDuplicate(*metadata, book)) { return; }
 
-    std::ofstream metadataOut{metadataPath};
-    metadataOut << metadata.dump(4);
-    metadataOut.close();
+    books->push_back(createBookEntry(book));
+    (void)writeMetadata(metadataPath, *metadata);
 }
