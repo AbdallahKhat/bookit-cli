@@ -33,7 +33,7 @@ public:
     void execute() const override;
 
 private:
-    const std::filesystem::path& m_path;
+    const std::filesystem::path m_path;
 };
 
 class AddBookCommand : public Command
