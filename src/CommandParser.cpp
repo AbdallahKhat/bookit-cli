@@ -63,6 +63,9 @@ bool CommandParser::parsePath()
 {
     if (m_argc < 3) // no path argument given
     {
+        // check for commands that requires no path
+        if (m_commandType == Type::ListBooks) { return true; }
+        // report error for command that requires a path
         m_error.emplace(Error{ParseError::MissingArgument});
         return false;
     }

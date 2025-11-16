@@ -11,6 +11,7 @@ enum Type // all available commands
     Init,       // bookit init ./path/dir/
     AddBook,    // bookit addbook path/file.pdf [adds file to library]
     RemoveBook, // bookit removebook book.pdf
+    ListBooks,  // bookit listbooks [prints workspace books]
     MaxCommands,
 };
 
@@ -29,7 +30,7 @@ enum ParseError
 inline constexpr CommandInfo::Type Invalid{MaxCommands}; // used as default init
 
 using namespace std::string_view_literals; // for sv suffix
-inline constexpr std::array commandNames{"init"sv, "addbook"sv, "removebook"sv};
+inline constexpr std::array commandNames{"init"sv, "addbook"sv, "removebook"sv, "listbooks"sv};
 inline constexpr std::array optionNames{"--author"sv, "--year"sv, "--isbn"sv, "--category"sv};
 
 static_assert(std::size(commandNames) == CommandInfo::MaxCommands, "mismatched number of commands");

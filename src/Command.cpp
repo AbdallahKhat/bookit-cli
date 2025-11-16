@@ -18,13 +18,7 @@ bool Command::validateFile(const fs::path& path) const
 // Class InitCommand
 bool InitCommand::validate() const
 {
-    // Check for an empty directory
-    if (validateDirectory(m_path))
-    {
-        if (fs::is_empty(m_path)) return true;
-    }
-
-    return false;
+    return validateDirectory(m_path) && fs::is_empty(m_path);
 }
 
 void InitCommand::execute() const
@@ -52,4 +46,15 @@ bool RemoveBookCommand::validate() const
 void RemoveBookCommand::execute() const
 {
     Bookit::Core::removeBook(m_wsDir, m_bookFileName);
+}
+
+// Class ListBooksCommand
+bool ListBooksCommand::validate() const
+{
+    return validateDirectory(m_wsDir);
+}
+
+void ListBooksCommand::execute() const
+{
+    Bookit::Core::listBooks(m_wsDir);
 }

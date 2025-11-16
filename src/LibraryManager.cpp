@@ -57,33 +57,30 @@ LibraryManager::getActiveWorkspace(const Bookit::Workspaces& workspace) const
 
 std::unique_ptr<Command> LibraryManager::createCommand(const Bookit::Workspaces& workspace)
 {
+    std::optional<fs::path> currentWs{};
+    if (m_parsedCmd.commandType() != CommandInfo::Init)
+    {
+        currentWs = getActiveWorkspace(workspace);
+        if (!currentWs) { return {}; }
+    }
+
     switch (m_parsedCmd.commandType())
     {
     case CommandInfo::Init:
         return std::make_unique<InitCommand>(m_parsedCmd.path());
 
     case CommandInfo::AddBook:
-    {
-        const auto& currentWs = getActiveWorkspace(workspace);
-        if (!currentWs) return {};
         return std::make_unique<AddBookCommand>(m_parsedCmd.path(), m_parsedCmd.options(),
                                                 *currentWs);
-    }
 
     case CommandInfo::RemoveBook:
     {
-        const auto& currentWs = getActiveWorkspace(workspace);
-        if (!currentWs) return {};
-
         const auto bookFileName = m_parsedCmd.path().filename().string();
-        if (bookFileName.empty())
-        {
-            std::cerr << "Error: Missing book file name to remove.\n";
-            return {};
-        }
-
         return std::make_unique<RemoveBookCommand>(bookFileName, *currentWs);
     }
+
+    case CommandInfo::ListBooks:
+        return std::make_unique<ListBooksCommand>(*currentWs);
 
     default:
         return {};
