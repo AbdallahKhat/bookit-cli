@@ -2,9 +2,11 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <sstream>
 #include <string_view>
 #include <vector>
 
@@ -230,6 +232,26 @@ bool removeWorkspaceBookFile(const fs::path& wsDir, const std::string_view bookN
     return true;
 }
 
+std::string formatBookLine(const Bookit::Book& book)
+{
+    constexpr int fieldWidth = 20;
+    std::ostringstream stream;
+    stream << std::left << std::setfill(' ');
+
+    auto appendField = [&](std::string_view label, const std::string& value, bool isLast = false) {
+        stream << label << ": " << std::setw(fieldWidth) << (value.empty() ? "" : value);
+        if (!isLast) { stream << " | "; }
+    };
+
+    appendField("Name", book.name);
+    appendField("Author", book.author);
+    appendField("Year", book.year);
+    appendField("ISBN", book.isbn);
+    appendField("Category", book.category, true);
+
+    return stream.str();
+}
+
 } // namespace
 
 void Bookit::Core::initializeWorkspace(const fs::path& wsDir)
@@ -313,6 +335,35 @@ void Bookit::Core::removeBook(const fs::path& wsDir, const std::string_view book
     }
 
     setDirR_X(wsDir);
+}
+
+void Bookit::Core::listBooks(const fs::path& wsDir)
+{
+    if (!validateWorkspaceAndMetadata(wsDir)) { return; }
+
+    const fs::path metadataPath = wsDir / ".bookit" / "metadata.json";
+
+    auto metadata = readMetadata(metadataPath);
+    if (!metadata) { return; }
+
+    auto* booksArray = getBooksArray(*metadata);
+    if (!booksArray) { return; }
+
+    auto books = loadBooksFromMetadata(*metadata);
+    if (books.empty())
+    {
+        std::cout << "No books found in workspace.\n";
+        return;
+    }
+
+    std::sort(books.begin(), books.end(),
+              [](const Bookit::Book& lhs, const Bookit::Book& rhs)
+              { return lhs.name < rhs.name; });
+
+    for (const auto& book : books)
+    {
+        std::cout << formatBookLine(book) << '\n';
+    }
 }
 
 void Bookit::Core::saveBookToMetadata(const fs::path& wsDir, const Book& book)
