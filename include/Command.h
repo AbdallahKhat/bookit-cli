@@ -72,4 +72,16 @@ private:
     std::filesystem::path m_wsDir;
 };
 
+class ListBooksCommand : public Command
+{
+public:
+    explicit ListBooksCommand(const std::filesystem::path& wsDir) : m_wsDir{wsDir} {}
+
+    bool validate() const override;
+    void execute() const override;
+
+private:
+    std::filesystem::path m_wsDir;
+};
+
 #endif // COMMAND_H

@@ -47,3 +47,14 @@ void RemoveBookCommand::execute() const
 {
     Bookit::Core::removeBook(m_wsDir, m_bookFileName);
 }
+
+// Class ListBooksCommand
+bool ListBooksCommand::validate() const
+{
+    return validateDirectory(m_wsDir);
+}
+
+void ListBooksCommand::execute() const
+{
+    Bookit::Core::listBooks(m_wsDir);
+}
