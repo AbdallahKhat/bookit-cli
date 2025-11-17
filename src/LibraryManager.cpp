@@ -82,6 +82,12 @@ std::unique_ptr<Command> LibraryManager::createCommand(const Bookit::Workspaces&
     case CommandInfo::ListBooks:
         return std::make_unique<ListBooksCommand>(*currentWs);
 
+    case CommandInfo::OpenBook:
+    {
+        const auto bookFileName = m_parsedCmd.path().filename().string();
+        return std::make_unique<OpenBookCommand>(bookFileName, *currentWs);
+    }
+
     default:
         return {};
     }
