@@ -1,5 +1,6 @@
 #include "Core.h"
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -192,7 +193,7 @@ std::optional<BookEntryLookup> findBookEntry(ordered_json& metadata,
     if (entryIt == books->end())
     {
         std::cerr << "Error: Book '" << bookName
-                  << "' was not found in metadata. Nothing to remove.\n";
+                  << "' was not found in metadata.\n";
         return std::nullopt;
     }
 
@@ -238,7 +239,8 @@ std::string formatBookLine(const Bookit::Book& book)
     std::ostringstream stream;
     stream << std::left << std::setfill(' ');
 
-    auto appendField = [&](std::string_view label, const std::string& value, bool isLast = false) {
+    auto appendField = [&](std::string_view label, const std::string& value, bool isLast = false)
+    {
         stream << label << ": " << std::setw(fieldWidth) << (value.empty() ? "" : value);
         if (!isLast) { stream << " | "; }
     };
@@ -250,6 +252,22 @@ std::string formatBookLine(const Bookit::Book& book)
     appendField("Category", book.category, true);
 
     return stream.str();
+}
+
+bool openFileWithSystemViewer(const fs::path& filePath)
+{
+    std::string command;
+
+    command = "xdg-open \"" + filePath.string() + "\"";
+
+    const int result = std::system(command.c_str());
+    if (result != 0)
+    {
+        std::cerr << "Error: Failed to open book using system viewer\n";
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace
@@ -310,6 +328,12 @@ void Bookit::Core::removeBook(const fs::path& wsDir, const std::string_view book
 {
     if (!validateWorkspaceAndMetadata(wsDir)) { return; }
 
+    if (bookFileName.empty())
+    {
+        std::cerr << "Error: Missing book name to remove\n";
+        return;
+    }
+
     const fs::path metadataPath = wsDir / ".bookit" / "metadata.json";
 
     auto metadata = readMetadata(metadataPath);
@@ -357,13 +381,37 @@ void Bookit::Core::listBooks(const fs::path& wsDir)
     }
 
     std::sort(books.begin(), books.end(),
-              [](const Bookit::Book& lhs, const Bookit::Book& rhs)
-              { return lhs.name < rhs.name; });
+              [](const Bookit::Book& lhs, const Bookit::Book& rhs) { return lhs.name < rhs.name; });
 
-    for (const auto& book : books)
+    for (const auto& book : books) { std::cout << formatBookLine(book) << '\n'; }
+}
+
+void Bookit::Core::openBook(const fs::path& wsDir, std::string_view bookFileName)
+{
+    if (!validateWorkspaceAndMetadata(wsDir)) { return; }
+
+    if (bookFileName.empty())
     {
-        std::cout << formatBookLine(book) << '\n';
+        std::cerr << "Error: Missing book name to open\n";
+        return;
     }
+
+    const fs::path metadataPath = wsDir / ".bookit" / "metadata.json";
+
+    auto metadata = readMetadata(metadataPath);
+    if (!metadata) { return; }
+
+    auto bookLookup = findBookEntry(*metadata, bookFileName);
+    if (!bookLookup) { return; }
+
+    const fs::path bookPath = wsDir / std::string(bookFileName);
+    if (!fs::exists(bookPath))
+    {
+        std::cerr << "Error: Book file '" << bookPath.string() << "' does not exist in workspace\n";
+        return;
+    }
+
+    openFileWithSystemViewer(bookPath);
 }
 
 void Bookit::Core::saveBookToMetadata(const fs::path& wsDir, const Book& book)

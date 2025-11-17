@@ -58,3 +58,14 @@ void ListBooksCommand::execute() const
 {
     Bookit::Core::listBooks(m_wsDir);
 }
+
+// Class OpenBookCommand
+bool OpenBookCommand::validate() const
+{
+    return validateDirectory(m_wsDir) && !m_bookFileName.empty();
+}
+
+void OpenBookCommand::execute() const
+{
+    Bookit::Core::openBook(m_wsDir, m_bookFileName);
+}
