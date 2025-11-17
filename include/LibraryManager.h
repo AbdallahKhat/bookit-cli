@@ -21,6 +21,7 @@ public:
 private:
     // Private functions
     std::unique_ptr<Command> createCommand(const Bookit::Workspaces& workspace);
+    bool handleWorkspaceCommand(Bookit::Workspaces& workspace) const;
 
     // Returns the active workspace path or std::nullopt
     std::optional<std::filesystem::path>
