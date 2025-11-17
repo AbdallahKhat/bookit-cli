@@ -84,4 +84,20 @@ private:
     std::filesystem::path m_wsDir;
 };
 
+class OpenBookCommand : public Command
+{
+public:
+    OpenBookCommand(const std::string& bookFileName, const std::filesystem::path& wsDir)
+        : m_bookFileName{bookFileName}, m_wsDir{wsDir}
+    {
+    }
+
+    bool validate() const override;
+    void execute() const override;
+
+private:
+    std::string m_bookFileName;
+    std::filesystem::path m_wsDir;
+};
+
 #endif // COMMAND_H
