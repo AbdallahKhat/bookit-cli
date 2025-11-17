@@ -13,6 +13,8 @@ public:
     Workspaces();
 
     void addWorkspace(const std::filesystem::path&);
+    void listWorkspaces();
+    void switchWorkspace(const std::filesystem::path& targetPath);
     const std::filesystem::path& getCurrentWorkspace() const noexcept { return m_currentWorkspace; }
 
 private:

@@ -19,6 +19,8 @@ bool LibraryManager::executeCmd()
 {
     Bookit::Workspaces workspace;
 
+    if (handleWorkspaceCommand(workspace)) { return true; }
+
     auto command = createCommand(workspace);
     if (!command) { return false; }
 
@@ -57,31 +59,29 @@ LibraryManager::getActiveWorkspace(const Bookit::Workspaces& workspace) const
 
 std::unique_ptr<Command> LibraryManager::createCommand(const Bookit::Workspaces& workspace)
 {
+    const auto type = m_parsedCmd.commandType();
+
     std::optional<fs::path> currentWs{};
-    if (m_parsedCmd.commandType() != CommandInfo::Init)
+    if (type != CommandInfo::Init)
     {
         currentWs = getActiveWorkspace(workspace);
         if (!currentWs) { return {}; }
     }
 
-    switch (m_parsedCmd.commandType())
+    switch (type)
     {
     case CommandInfo::Init:
         return std::make_unique<InitCommand>(m_parsedCmd.path());
-
     case CommandInfo::AddBook:
         return std::make_unique<AddBookCommand>(m_parsedCmd.path(), m_parsedCmd.options(),
                                                 *currentWs);
-
     case CommandInfo::RemoveBook:
     {
         const auto bookFileName = m_parsedCmd.path().filename().string();
         return std::make_unique<RemoveBookCommand>(bookFileName, *currentWs);
     }
-
     case CommandInfo::ListBooks:
         return std::make_unique<ListBooksCommand>(*currentWs);
-
     case CommandInfo::OpenBook:
     {
         const auto bookFileName = m_parsedCmd.path().filename().string();
@@ -90,5 +90,20 @@ std::unique_ptr<Command> LibraryManager::createCommand(const Bookit::Workspaces&
 
     default:
         return {};
+    }
+}
+
+bool LibraryManager::handleWorkspaceCommand(Bookit::Workspaces& workspace) const
+{
+    switch (m_parsedCmd.commandType())
+    {
+    case CommandInfo::ListWs:
+        workspace.listWorkspaces();
+        return true;
+    case CommandInfo::SwitchWs:
+        workspace.switchWorkspace(m_parsedCmd.path());
+        return true;
+    default:
+        return false;
     }
 }

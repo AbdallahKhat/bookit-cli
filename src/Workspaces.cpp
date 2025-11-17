@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <nlohmann/json.hpp>
 
 namespace fs = std::filesystem;
@@ -73,7 +74,7 @@ json Workspaces::loadWorkspaces()
 void Workspaces::addWorkspace(const std::filesystem::path& path)
 {
     // Convert to absolute path
-    auto absolutePath = fs::absolute(path);
+    auto absolutePath = fs::absolute(path).lexically_normal();
     auto config = loadWorkspaces();
 
     // Convert path to string for comparison
@@ -85,10 +86,10 @@ void Workspaces::addWorkspace(const std::filesystem::path& path)
                            [&pathStr](const json& ws) { return ws.get<std::string>() == pathStr; });
 
     // If workspace doesn't exist, add it
-    if (it == workspaces.end()) 
-    { 
+    if (it == workspaces.end())
+    {
         workspaces.push_back(pathStr);
-        saveConfig(config);  // Save the updated config with new workspace
+        saveConfig(config); // Save the updated config with new workspace
     }
 
     // Set as current workspace
@@ -114,6 +115,65 @@ void Workspaces::saveConfig(const nlohmann::json& config)
     std::ofstream configStream{m_configFile};
     configStream << config.dump(4);
     configStream.close();
+}
+
+void Workspaces::listWorkspaces()
+{
+    auto config = loadWorkspaces();
+
+    std::string current;
+    if (config.contains("current") && config["current"].is_string())
+    {
+        current = config["current"].get<std::string>();
+    }
+
+    std::cout << "CURRENT: " << (current.empty() ? std::string{"(none)"} : current) << '\n';
+    std::cout << "Available:\n";
+
+    if (!config.contains("workspaces") || !config["workspaces"].is_array() ||
+        config["workspaces"].empty())
+    {
+        std::cout << "(none)\n";
+        return;
+    }
+
+    for (const auto& wsEntry : config["workspaces"])
+    {
+        if (wsEntry.is_string()) { std::cout << wsEntry.get<std::string>() << '\n'; }
+    }
+}
+
+void Workspaces::switchWorkspace(const std::filesystem::path& targetPath)
+{
+    if (targetPath.empty())
+    {
+        std::cerr << "Error: Missing workspace path to switch to\n";
+        return;
+    }
+
+    auto config = loadWorkspaces();
+    if (!config.contains("workspaces") || !config["workspaces"].is_array())
+    {
+        std::cerr << "Error: Workspace configuration is corrupted; no workspace list found\n";
+        return;
+    }
+
+    const auto absolutePath = fs::absolute(targetPath).lexically_normal();
+    const auto pathStr = absolutePath.string();
+
+    auto& workspaces = config["workspaces"];
+    auto it = std::find_if(workspaces.begin(), workspaces.end(), [&pathStr](const json& ws)
+                           { return ws.is_string() && ws.get<std::string>() == pathStr; });
+
+    if (it == workspaces.end())
+    {
+        std::cerr << "Error: Workspace '" << pathStr
+                  << "' has not been initialized. Use 'bookit init <dir>' first.\n";
+        return;
+    }
+
+    setCurrent(pathStr);
+    std::cout << "Switched current workspace to: " << pathStr << '\n';
 }
 
 }; // namespace Bookit
