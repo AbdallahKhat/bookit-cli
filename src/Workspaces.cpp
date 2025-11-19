@@ -9,6 +9,25 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
+namespace
+{
+void unlockWorkspaceDirectory(const fs::path& dir)
+{
+    if (fs::exists(dir))
+        fs::permissions(dir, static_cast<fs::perms>(0755), fs::perm_options::replace);
+}
+
+std::string ensureTrailingSlash(const fs::path& absolutePath)
+{
+    std::string str = absolutePath.string();
+
+    // If it’s a directory and doesn’t end with '/', add it
+    if (std::filesystem::is_directory(absolutePath) && str.back() != '/') str.push_back('/');
+
+    return str;
+}
+} // namespace
+
 namespace Bookit
 {
 
@@ -78,7 +97,7 @@ void Workspaces::addWorkspace(const std::filesystem::path& path)
     auto config = loadWorkspaces();
 
     // Convert path to string for comparison
-    std::string pathStr = absolutePath.string();
+    std::string pathStr = ensureTrailingSlash(absolutePath);
 
     // Check if workspace already exists in the array
     auto& workspaces = config["workspaces"];
@@ -93,7 +112,7 @@ void Workspaces::addWorkspace(const std::filesystem::path& path)
     }
 
     // Set as current workspace
-    setCurrent(absolutePath);
+    setCurrent(pathStr);
 }
 
 // Set the current workspace and save to file
@@ -159,7 +178,7 @@ void Workspaces::switchWorkspace(const std::filesystem::path& targetPath)
     }
 
     const auto absolutePath = fs::absolute(targetPath).lexically_normal();
-    const auto pathStr = absolutePath.string();
+    const auto pathStr = ensureTrailingSlash(absolutePath);
 
     auto& workspaces = config["workspaces"];
     auto it = std::find_if(workspaces.begin(), workspaces.end(), [&pathStr](const json& ws)
@@ -174,6 +193,53 @@ void Workspaces::switchWorkspace(const std::filesystem::path& targetPath)
 
     setCurrent(pathStr);
     std::cout << "Switched current workspace to: " << pathStr << '\n';
+}
+
+void Workspaces::removeWorkspace(const std::filesystem::path& targetPath)
+{
+    if (targetPath.empty())
+    {
+        std::cerr << "Error: Missing workspace path to remove\n";
+        return;
+    }
+
+    auto config = loadWorkspaces();
+    if (!config.contains("workspaces") || !config["workspaces"].is_array())
+    {
+        std::cerr << "Error: Workspace configuration is corrupted; no workspace list found\n";
+        return;
+    }
+
+    const auto absolutePath = fs::absolute(targetPath).lexically_normal();
+    const auto pathStr = ensureTrailingSlash(absolutePath);
+
+    auto& workspaces = config["workspaces"];
+    auto it = std::find_if(workspaces.begin(), workspaces.end(), [&pathStr](const json& ws)
+                           { return ws.is_string() && ws.get<std::string>() == pathStr; });
+
+    if (it == workspaces.end())
+    {
+        std::cerr << "Error: Workspace '" << pathStr
+                  << "' is not tracked. Use 'bookit init <dir>' first.\n";
+        return;
+    }
+
+    workspaces.erase(it);
+
+    if (config.contains("current") && config["current"].is_string() &&
+        config["current"].get<std::string>() == pathStr)
+    {
+        m_currentWorkspace.clear();
+        config["current"] = "";
+    }
+
+    saveConfig(config);
+    unlockWorkspaceDirectory(pathStr);
+    std::cout << "Removed workspace: " << pathStr << '\n';
+    std::cout << "Note: the directory was left on disk for safety "
+                 "(in case you need to back up any book).\n";
+    std::cout << "To remove it manually (Linux):  rm -r \"" << pathStr << "\"\n";
+    std::cout << "This permanently deletes files — make sure important PDFs are backed up.\n";
 }
 
 }; // namespace Bookit
