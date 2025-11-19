@@ -19,6 +19,9 @@ void listBooks(const std::filesystem::path& wsDir);
 
 void openBook(const std::filesystem::path& wsDir, std::string_view bookFileName);
 
+void updateBook(const std::filesystem::path& wsDir, std::string_view bookFileName,
+                const CommandParser::Options& options);
+
 void saveBookToMetadata(const std::filesystem::path& wsDir, const Book& book);
 
 } // namespace Bookit::Core
