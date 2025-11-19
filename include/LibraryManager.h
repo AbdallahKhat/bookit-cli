@@ -7,8 +7,11 @@
 #include <filesystem>
 #include <optional>
 
-// LibraryManager is the coordinator class for all features of the library.
-// It serves as the main interface for library operations.
+/**
+ * LibraryManager provides a unified interface (facade) for executing library commands.
+ * It handles workspace context, validates parsed commands, and dispatches execution
+ * to the appropriate command implementations.
+ */
 class LibraryManager
 {
 public:
