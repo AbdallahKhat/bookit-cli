@@ -85,7 +85,7 @@ bool CommandParser::parsePath()
         return false;
     }
 
-    if (m_commandType == Type::Init)
+    if (m_commandType == Type::Init || m_commandType == Type::OpenBook)
     {
         if (m_argc > 3)
         {
