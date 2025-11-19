@@ -237,14 +237,26 @@ bool writeMetadata(const fs::path& metadataPath, const ordered_json& metadata)
     return true;
 }
 
+bool ensureBookFileExists(const fs::path& bookPath, std::string_view errorDetail)
+{
+    if (fs::exists(bookPath)) { return true; }
+
+    std::cerr << "Error: Book file '" << bookPath.string() << "' " << errorDetail << '\n';
+    return false;
+}
+
+bool ensureBookNameProvided(std::string_view bookName, std::string_view action)
+{
+    if (!bookName.empty()) { return true; }
+
+    std::cerr << "Error: Missing book name to " << action << '\n';
+    return false;
+}
+
 bool removeWorkspaceBookFile(const fs::path& wsDir, const std::string_view bookName)
 {
     const auto bookPath = wsDir / bookName;
-    if (!fs::exists(bookPath))
-    {
-        std::cerr << "Error: Book file '" << bookPath.string() << "' does not exist in workspace\n";
-        return false;
-    }
+    if (!ensureBookFileExists(bookPath, "does not exist in workspace")) { return false; }
 
     std::error_code ec;
     if (!fs::remove(bookPath, ec) || ec)
@@ -255,14 +267,6 @@ bool removeWorkspaceBookFile(const fs::path& wsDir, const std::string_view bookN
     }
 
     return true;
-}
-
-bool ensureBookFileExists(const fs::path& bookPath, std::string_view errorDetail)
-{
-    if (fs::exists(bookPath)) { return true; }
-
-    std::cerr << "Error: Book file '" << bookPath.string() << "' " << errorDetail << '\n';
-    return false;
 }
 
 std::string formatBookLine(const Bookit::Book& book)
@@ -360,11 +364,7 @@ void Bookit::Core::removeBook(const fs::path& wsDir, const std::string_view book
 {
     if (!validateWorkspaceAndMetadata(wsDir)) { return; }
 
-    if (bookFileName.empty())
-    {
-        std::cerr << "Error: Missing book name to remove\n";
-        return;
-    }
+    if (!ensureBookNameProvided(bookFileName, "remove")) { return; }
 
     const fs::path metadataPath = wsDir / ".bookit" / "metadata.json";
 
@@ -422,11 +422,7 @@ void Bookit::Core::openBook(const fs::path& wsDir, std::string_view bookFileName
 {
     if (!validateWorkspaceAndMetadata(wsDir)) { return; }
 
-    if (bookFileName.empty())
-    {
-        std::cerr << "Error: Missing book name to open\n";
-        return;
-    }
+    if (!ensureBookNameProvided(bookFileName, "open")) { return; }
 
     const fs::path metadataPath = wsDir / ".bookit" / "metadata.json";
 
@@ -447,11 +443,7 @@ void Bookit::Core::updateBook(const fs::path& wsDir, std::string_view bookFileNa
 {
     if (!validateWorkspaceAndMetadata(wsDir)) { return; }
 
-    if (bookFileName.empty())
-    {
-        std::cerr << "Error: Missing book name to update\n";
-        return;
-    }
+    if (!ensureBookNameProvided(bookFileName, "update")) { return; }
 
     if (options.empty())
     {
