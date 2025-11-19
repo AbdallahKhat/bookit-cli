@@ -103,6 +103,9 @@ bool LibraryManager::handleWorkspaceCommand(Bookit::Workspaces& workspace) const
     case CommandInfo::SwitchWs:
         workspace.switchWorkspace(m_parsedCmd.path());
         return true;
+    case CommandInfo::RemoveWs:
+        workspace.removeWorkspace(m_parsedCmd.path());
+        return true;
     default:
         return false;
     }
