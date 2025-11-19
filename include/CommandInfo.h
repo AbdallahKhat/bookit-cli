@@ -15,6 +15,7 @@ enum Type // all available commands
     OpenBook,   // bookit openbook book.pdf
     ListWs,     // bookit listws [lists known workspaces]
     SwitchWs,   // bookit switchws /path/to/ws
+    RemoveWs,   // bookit removews /path/to/ws
     MaxCommands,
 };
 
@@ -34,7 +35,7 @@ inline constexpr CommandInfo::Type Invalid{MaxCommands}; // used as default init
 
 using namespace std::string_view_literals; // for sv suffix
 inline constexpr std::array commandNames{"init"sv,     "addbook"sv, "removebook"sv, "listbooks"sv,
-                                         "openbook"sv, "listws"sv,  "switchws"sv};
+                                         "openbook"sv, "listws"sv,  "switchws"sv,   "removews"sv};
 inline constexpr std::array optionNames{"--author"sv, "--year"sv, "--isbn"sv, "--category"sv};
 
 static_assert(std::size(commandNames) == CommandInfo::MaxCommands, "mismatched number of commands");
