@@ -69,3 +69,14 @@ void OpenBookCommand::execute() const
 {
     Bookit::Core::openBook(m_wsDir, m_bookFileName);
 }
+
+// Class UpdateBookCommand
+bool UpdateBookCommand::validate() const
+{
+    return validateDirectory(m_wsDir) && !m_bookFileName.empty() && !m_options.empty();
+}
+
+void UpdateBookCommand::execute() const
+{
+    Bookit::Core::updateBook(m_wsDir, m_bookFileName, m_options);
+}
