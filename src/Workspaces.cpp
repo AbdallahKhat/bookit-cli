@@ -93,9 +93,14 @@ Workspaces::Workspaces() : m_configFile{getConfigFilePath()}
 // Get the configuration file path (same directory as executable)
 std::filesystem::path Workspaces::getConfigFilePath() const
 {
-    // Get the directory of the executable
-    auto exePath = fs::current_path() / "workspaces.json";
-    return exePath;
+    std::error_code ec;
+    auto exePath = fs::read_symlink("/proc/self/exe", ec);
+    if (ec)
+    {
+        std::cerr << "Error: could not resolve /proc/self/exe: " << ec.message() << '\n';
+        return {};
+    }
+    return exePath.parent_path() / "workspaces.json";
 }
 
 // Create default configuration structure
