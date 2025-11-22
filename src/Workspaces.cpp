@@ -250,7 +250,6 @@ void Workspaces::removeWorkspace(const std::filesystem::path& targetPath)
     std::cout << "Note: the directory was left on disk for safety "
                  "(in case you need to back up any book).\n";
     std::cout << "To remove it manually (Linux):  rm -r \"" << pathStr << "\"\n";
-    std::cout << "This permanently deletes files — make sure important PDFs are backed up.\n";
 }
 
 }; // namespace Bookit
