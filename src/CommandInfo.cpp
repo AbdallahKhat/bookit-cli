@@ -14,7 +14,35 @@ const std::string_view toString(CommandInfo::Type type) noexcept
 // print a help message for usage and available commands.
 void printHelp() noexcept
 {
-    std::cout << "bookit: --help: WIP\n";
+    using std::cout;
+
+    cout << "bookit - PDF workspace manager\n\n";
+    cout << "Usage:\n";
+    cout << "  bookit <command> [arguments] [options]\n\n";
+
+    cout << "Workspace commands:\n";
+    cout << "  init <directory>         Initialize a workspace at <directory> (creates .bookit).\n";
+    cout << "  listws                   List all tracked workspaces and show the current one.\n";
+    cout << "  switchws <directory>     Switch the current workspace to an existing entry.\n";
+    cout << "  removews <directory>     Unregister a workspace from the tracked list (keeps files).\n\n";
+
+    cout << "Library commands (operate on the current workspace):\n";
+    cout << "  addbook <path/to/book.pdf> [options]\n";
+    cout << "                           Copy a PDF into the workspace and add metadata.\n";
+    cout << "  removebook <book.pdf>    Delete the PDF and its metadata entry.\n";
+    cout << "  updatebook <book.pdf> [options]\n";
+    cout << "                           Update metadata fields for an existing book.\n";
+    cout << "  listbooks                List all books stored in the workspace.\n";
+    cout << "  openbook <book.pdf>      Open a book using the system PDF viewer.\n\n";
+
+    cout << "Metadata options (usable with addbook/updatebook):\n";
+    cout << "  --author <name>          Author of the book.\n";
+    cout << "  --year <year>            Publication year.\n";
+    cout << "  --isbn <value>           ISBN identifier.\n";
+    cout << "  --category <label>       Arbitrary category or shelf label.\n\n";
+
+    cout << "Global options:\n";
+    cout << "  --help                   Show this help message.\n";
 }
 
 static void tryHelpStr() noexcept
